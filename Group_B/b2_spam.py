@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
@@ -9,7 +10,10 @@ from sklearn.metrics import (
     accuracy_score, confusion_matrix, classification_report
 )
 
-df = pd.read_csv("emails.csv").drop_duplicates()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(SCRIPT_DIR, "emails.csv") if not os.path.exists("emails.csv") else "emails.csv"
+
+df = pd.read_csv(data_path).drop_duplicates()
 df.columns = df.columns.str.strip()
 if "Prediction" not in df:
     raise ValueError("Expected target column Prediction")

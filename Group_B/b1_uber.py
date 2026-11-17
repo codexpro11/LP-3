@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,7 +10,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-df = pd.read_csv("uber.csv").drop_duplicates()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(SCRIPT_DIR, "uber.csv") if not os.path.exists("uber.csv") else "uber.csv"
+
+df = pd.read_csv(data_path).drop_duplicates()
 required = [
     "fare_amount", "pickup_datetime", "pickup_longitude",
     "pickup_latitude", "dropoff_longitude",
@@ -89,7 +93,7 @@ ax.set_xticks(range(len(corr)), corr.columns, rotation=90)
 ax.set_yticks(range(len(corr)), corr.columns)
 fig.colorbar(im, ax=ax)
 fig.tight_layout()
-fig.savefig("uber_correlation.png", dpi=160)
+fig.savefig(os.path.join(SCRIPT_DIR, "uber_correlation.png"), dpi=160)
 plt.show()
 
 models = {

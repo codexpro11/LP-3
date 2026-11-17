@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -10,7 +11,10 @@ from sklearn.metrics import (
     recall_score, f1_score
 )
 
-df = pd.read_csv("diabetes.csv").drop_duplicates()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(SCRIPT_DIR, "diabetes.csv") if not os.path.exists("diabetes.csv") else "diabetes.csv"
+
+df = pd.read_csv(data_path).drop_duplicates()
 features = [
     "Pregnancies", "Glucose", "BloodPressure",
     "SkinThickness", "Insulin", "BMI",

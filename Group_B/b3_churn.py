@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -10,7 +11,10 @@ from sklearn.metrics import (
     roc_auc_score
 )
 
-df = pd.read_csv("Churn_Modelling.csv").drop_duplicates()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(SCRIPT_DIR, "Churn_Modelling.csv") if not os.path.exists("Churn_Modelling.csv") else "Churn_Modelling.csv"
+
+df = pd.read_csv(data_path).drop_duplicates()
 required = {
     "Exited", "CreditScore", "Geography", "Gender", "Age",
     "Tenure", "Balance", "NumOfProducts", "HasCrCard",

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,8 +7,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(SCRIPT_DIR, "sales_data_sample.csv") if not os.path.exists("sales_data_sample.csv") else "sales_data_sample.csv"
+
 df = pd.read_csv(
-    "sales_data_sample.csv", encoding="latin-1"
+    data_path, encoding="latin-1"
 ).drop_duplicates()
 features = ["QUANTITYORDERED", "PRICEEACH", "SALES"]
 if not set(features).issubset(df.columns):
@@ -37,7 +41,7 @@ plt.title("Elbow method - sales order lines")
 plt.xticks(ks)
 plt.grid(alpha=0.3)
 plt.tight_layout()
-plt.savefig("sales_elbow.png", dpi=160)
+plt.savefig(os.path.join(SCRIPT_DIR, "sales_elbow.png"), dpi=160)
 plt.show()
 print("k and inertia:", list(zip(ks, inertias)))
 k = int(input(f"Choose elbow k from 2 to {max_k}: "))
@@ -54,7 +58,7 @@ print("Mean observed values in original units:")
 print(numeric_result.groupby("Cluster")[features].mean())
 if 1 < len(set(labels)) < len(labels):
     print("Silhouette:", silhouette_score(scaled, labels))
-df.to_csv("sales_clustered.csv", index=False)
+df.to_csv(os.path.join(SCRIPT_DIR, "sales_clustered.csv"), index=False)
 
 plt.scatter(
     imputed[:, 0], imputed[:, 2], c=labels,
@@ -64,5 +68,5 @@ plt.xlabel("Quantity ordered")
 plt.ylabel("Sales")
 plt.title("Order-line clusters: two-feature view")
 plt.tight_layout()
-plt.savefig("sales_clusters.png", dpi=160)
+plt.savefig(os.path.join(SCRIPT_DIR, "sales_clusters.png"), dpi=160)
 plt.show()

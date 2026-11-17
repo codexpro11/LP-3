@@ -19,14 +19,20 @@ def run_test(title, cmd, cwd, stdin_data=None, env_vars=None):
     if env_vars:
         env.update(env_vars)
 
-    res = subprocess.run(
-        cmd,
-        cwd=cwd,
-        input=stdin_data,
-        text=True,
-        capture_output=True,
-        env=env
-    )
+    try:
+        res = subprocess.run(
+            cmd,
+            cwd=cwd,
+            input=stdin_data,
+            text=True,
+            capture_output=True,
+            env=env
+        )
+    except FileNotFoundError:
+        print(f"\n[Warning]: Command '{cmd[0]}' not found on this system.")
+        print(f"Result: [SKIPPED / COMMAND NOT FOUND]")
+        print("=" * 70 + "\n")
+        return False
 
     if res.stdout:
         print(res.stdout.strip())
