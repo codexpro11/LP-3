@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C2 - MetaMask wallet demonstration</title>
+  <style>
+    body { font: 17px/1.6 system-ui; max-width: 760px; margin: 48px auto; padding: 20px; background: #f4f7fb; color: #162339; }
+    button { padding: 12px 20px; background: #183f80; color: white; border: 0; border-radius: 8px; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #dc7200; outline-offset: 3px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 20px; background: white; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>C2: Connect your test wallet</h1>
+  <p>Create your learning wallet in MetaMask first and select Sepolia. This page requests account access and reads its balance. It does not create keys or send transactions.</p>
+  <p>Use a browser profile with only MetaMask enabled as the Ethereum wallet extension. Complete the send/receive exercise inside MetaMask using the steps in Explanations.md.</p>
+  <button id="connect">Connect / refresh MetaMask</button>
+  <pre id="status" role="status" aria-live="polite">Not connected.</pre>
+  <script>
+    const button = document.getElementById('connect');
+    const status = document.getElementById('status');
+    const provider = window.ethereum;
+    let requestVersion = 0;
+
+    // BigInt avoids rounding large wei balances through a JavaScript Number.
+    function formatEther(wei) {
+      const unit = 10n ** 18n;
+      const fraction = (wei % unit).toString().padStart(18, '0');
+      return `${wei / unit}.${fraction}`;
+    }
+
+    async function refresh(askPermission = false) {
+      const version = ++requestVersion;
+      button.disabled = true;
+      try {
+        if (!provider || !provider.isMetaMask) {
+          throw new Error('Install and enable MetaMask, then reload this page.');
+        }
+        const accounts = await provider.request({
+          method: askPermission ? 'eth_requestAccounts' : 'eth_accounts'
+        });
+        if (!accounts.length) throw new Error('No account connected. Click Connect.');
+        const chain = await provider.request({method: 'eth_chainId'});
+        if (chain.toLowerCase() !== '0xaa36a7') {
+          throw new Error(`Network ${chain}: select Sepolia in MetaMask, then refresh.`);
+        }
+        const balance = await provider.request({
+          method: 'eth_getBalance', params: [accounts[0], 'latest']
+        });
+        if (version !== requestVersion) return;
+        status.textContent = `Account: ${accounts[0]}\nNetwork: Sepolia (11155111)\nBalance: ${formatEther(BigInt(balance))} test ETH`;
+      } catch (error) {
+        if (version === requestVersion) {
+          status.textContent = error.code === 4001
+            ? 'Connection declined. Click Connect to try again.'
+            : error.message;
+        }
+      } finally {
+        if (version === requestVersion) button.disabled = false;
+      }
+    }
+    button.addEventListener('click', () => refresh(true));
+    if (provider && provider.on) {
+      provider.on('accountsChanged', () => refresh(false));
+      provider.on('chainChanged', () => refresh(false));
+    }
+  </script>
+</body>
+</html>
