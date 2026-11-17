@@ -8,12 +8,10 @@ Examples below are expected results worked out from the supplied inputs. Complex
 
 ---
 
-## A1. Fibonacci numbers and step count
-**Aim:** Generate the first n Fibonacci numbers and count execution steps.
+## A1. Fibonacci numbers
+**Aim:** Generate the first n Fibonacci numbers.
 
 **Idea:** Start with 0 and 1. Repeatedly output the current value and update the pair to (next, current + next). This avoids recomputing terms as naive recursion does.
-
-**Counting convention:** Count each assignment, comparison, addition, append/add, and return as one step. The for/while loop mechanism counts the explicit comparison in each iteration including the final failed check. Function call and print overhead are excluded. There is no universal step count without such an explicit convention.
 
 ### Code - A1_Fibonacci.java
 ```java
@@ -22,43 +20,21 @@ import java.util.List;
 import java.util.Scanner;
 
 public class A1_Fibonacci {
-    public static class Result {
-        public final List<Long> terms;
-        public final long steps;
-
-        public Result(List<Long> terms, long steps) {
-            this.terms = terms;
-            this.steps = steps;
-        }
-    }
-
-    public static Result fibonacci(int n) {
+    public static List<Long> fibonacci(int n) {
         if (n < 0) {
             throw new IllegalArgumentException("n must be non-negative");
         }
 
-        // Counter bookkeeping itself is not part of the count.
-        long steps = 1; // n < 0 comparison
-        long a = 0, b = 1;
         List<Long> result = new ArrayList<>();
-        int i = 0;
-        steps += 4; // a, b, result, i assignments
-
-        while (i < n) {
-            steps += 1; // successful loop comparison
+        long a = 0, b = 1;
+        for (int i = 0; i < n; i++) {
             result.add(a);
-            steps += 1; // append / add
             long temp = a + b;
             a = b;
             b = temp;
-            steps += 3; // addition, two assignments
-            i = i + 1;
-            steps += 2; // addition and assignment
         }
 
-        steps += 1; // final failed comparison
-        steps += 1; // return
-        return new Result(result, steps);
+        return result;
     }
 
     public static void main(String[] args) {
@@ -69,21 +45,279 @@ public class A1_Fibonacci {
             return;
         }
         int n = scanner.nextInt();
-        Result res = fibonacci(n);
-        System.out.println("Fibonacci: " + res.terms);
-        System.out.println("Counted steps: " + res.steps);
-        System.out.println("Formula 7n + 7: " + (7L * n + 7));
+        List<Long> terms = fibonacci(n);
+        System.out.println("Fibonacci: " + terms);
     }
 }
 ```
 
-**Walkthrough:** For n = 5, the pairs before output are (0,1), (1,1), (1,2), (2,3), (3,5), so the list is [0, 1, 1, 2, 3]. Counted steps = 42. For n = 0 the list is empty and steps = 7.
+**Walkthrough:** For n = 5, the pairs before output are (0,1), (1,1), (1,2), (2,3), (3,5), so the list is [0, 1, 1, 2, 3]. For n = 0 the list is empty.
 
 **Complexity:** Time O(n); O(n) space for the returned list, O(1) auxiliary state.
 
-**Tell the examiner:** "I use two variables to store consecutive Fibonacci numbers. Every iteration generates one term, so runtime grows linearly with the number of terms. I define my step-count model explicitly, giving 7n + 7."
+**Tell the examiner:** "I use two variables to store consecutive Fibonacci numbers. Every iteration generates one term, so runtime grows linearly with the number of terms."
 
 **Viva:** Why avoid naive recursion? It repeats the same subproblems and takes exponential time ($O(2^n)$). Is this dynamic programming? It is the space-optimized iterative recurrence, retaining only the two necessary states.
+
+---
+
+## A2. Huffman Encoding using Greedy Strategy
+**Aim:** Write a program to implement Huffman Encoding using a greedy strategy.
+
+**Objective:** Understand and solve Huffman Encoding using the greedy method for lossless data compression.
+
+### Concept & Theory
+* **Greedy Approach:** At each step, select the two minimum frequency subtrees and combine them into a parent node whose frequency is the sum of both children.
+* **Lossless Compression:** The exact original string can be reconstructed without any data loss.
+* **Prefix Rule:** No code assigned to any character is a prefix of any other character's code, preventing ambiguity during decoding.
+* **Frequency-dependent length:** High-frequency characters get the shortest codes, while rare characters get longer codes.
+
+### Algorithm Steps:
+1. Count the frequency of each distinct character.
+2. Insert each unique character as a leaf node into a min-priority queue sorted by frequency.
+3. While the queue contains more than one node:
+   - Extract the two nodes with the lowest frequencies: $left$ and $right$.
+   - Create a new internal node $z$ with frequency $= left.freq + right.freq$.
+   - Assign $left$ as the left child (edge `0`) and $right$ as the right child (edge `1`).
+   - Insert $z$ back into the priority queue.
+4. The remaining node is the root of the Huffman Tree.
+5. Traverse from root to each leaf to assign binary prefix codes (append `0` for left branch, `1` for right branch).
+
+### Code - A2_HuffmanEncoding.java
+```java
+import java.util.*;
+
+public class A2_HuffmanEncoding {
+
+    public static class HuffmanNode implements Comparable<HuffmanNode> {
+        public Character ch;
+        public int freq;
+        public HuffmanNode left;
+        public HuffmanNode right;
+        public boolean isLeaf;
+        public int creationOrder;
+
+        public HuffmanNode(Character ch, int freq, int creationOrder) {
+            this.ch = ch;
+            this.freq = freq;
+            this.left = null;
+            this.right = null;
+            this.isLeaf = (ch != null);
+            this.creationOrder = creationOrder;
+        }
+
+        public HuffmanNode(int freq, HuffmanNode left, HuffmanNode right, int creationOrder) {
+            this.ch = null;
+            this.freq = freq;
+            this.left = left;
+            this.right = right;
+            this.isLeaf = false;
+            this.creationOrder = creationOrder;
+        }
+
+        @Override
+        public int compareTo(HuffmanNode other) {
+            if (this.freq != other.freq) {
+                return Integer.compare(this.freq, other.freq);
+            }
+            if (this.isLeaf != other.isLeaf) {
+                return this.isLeaf ? 1 : -1;
+            }
+            return Integer.compare(this.creationOrder, other.creationOrder);
+        }
+    }
+
+    public static HuffmanNode buildHuffmanTree(Map<Character, Integer> freqMap) {
+        if (freqMap == null || freqMap.isEmpty()) return null;
+
+        PriorityQueue<HuffmanNode> pq = new PriorityQueue<>();
+        int orderCounter = 0;
+        for (Map.Entry<Character, Integer> entry : freqMap.entrySet()) {
+            pq.add(new HuffmanNode(entry.getKey(), entry.getValue(), orderCounter++));
+        }
+
+        if (pq.size() == 1) {
+            HuffmanNode only = pq.poll();
+            return new HuffmanNode(only.freq, only, null, orderCounter++);
+        }
+
+        while (pq.size() > 1) {
+            HuffmanNode left = pq.poll();
+            HuffmanNode right = pq.poll();
+            HuffmanNode parent = new HuffmanNode(left.freq + right.freq, left, right, orderCounter++);
+            pq.add(parent);
+        }
+
+        return pq.peek();
+    }
+
+    public static void generateCodes(HuffmanNode node, String prefix, Map<Character, String> codeMap) {
+        if (node == null) return;
+        if (node.isLeaf) {
+            codeMap.put(node.ch, prefix.isEmpty() ? "0" : prefix);
+            return;
+        }
+        generateCodes(node.left, prefix + "0", codeMap);
+        generateCodes(node.right, prefix + "1", codeMap);
+    }
+
+    public static String encode(String text, Map<Character, String> codeMap) {
+        StringBuilder encoded = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            encoded.append(codeMap.get(c));
+        }
+        return encoded.toString();
+    }
+
+    public static String decode(String bitString, HuffmanNode root) {
+        if (root == null || bitString == null || bitString.isEmpty()) return "";
+        if (root.left != null && root.right == null && root.left.isLeaf) {
+            return String.valueOf(root.left.ch).repeat(bitString.length());
+        }
+
+        StringBuilder decoded = new StringBuilder();
+        HuffmanNode curr = root;
+        for (int i = 0; i < bitString.length(); i++) {
+            curr = (bitString.charAt(i) == '0') ? curr.left : curr.right;
+            if (curr != null && curr.isLeaf) {
+                decoded.append(curr.ch);
+                curr = root;
+            }
+        }
+        return decoded.toString();
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== Huffman Encoding (Greedy Strategy) ===");
+        System.out.println("Choose Input Mode:");
+        System.out.println("  1. Enter text string (e.g. BCAADDDCCACACAC)");
+        System.out.println("  2. Enter character-frequency table (e.g. a:10, e:15, ...)");
+        System.out.print("Enter choice (1 or 2) or paste string directly: ");
+
+        if (!scanner.hasNextLine()) return;
+        String line = scanner.nextLine().trim();
+        while (line.isEmpty() && scanner.hasNextLine()) {
+            line = scanner.nextLine().trim();
+        }
+
+        Map<Character, Integer> freqMap = new LinkedHashMap<>();
+        String inputString = null;
+
+        if (line.equals("1")) {
+            System.out.print("Enter string to encode: ");
+            inputString = scanner.nextLine().trim();
+            for (char c : inputString.toCharArray()) {
+                freqMap.put(c, freqMap.getOrDefault(c, 0) + 1);
+            }
+        } else if (line.equals("2")) {
+            System.out.print("Enter number of distinct characters: ");
+            int n = scanner.nextInt();
+            scanner.nextLine();
+            System.out.println("Enter each character and frequency (e.g., 'a 10' or 'a:10'):");
+            for (int i = 0; i < n; i++) {
+                System.out.print("Character " + (i + 1) + ": ");
+                String row = scanner.nextLine().trim();
+                while (row.isEmpty() && scanner.hasNextLine()) {
+                    row = scanner.nextLine().trim();
+                }
+                String[] parts = row.replace(":", " ").split("\\s+");
+                char c = parts[0].charAt(0);
+                int f = Integer.parseInt(parts[1]);
+                freqMap.put(c, f);
+            }
+        } else {
+            inputString = line;
+            for (char c : inputString.toCharArray()) {
+                freqMap.put(c, freqMap.getOrDefault(c, 0) + 1);
+            }
+        }
+
+        if (freqMap.isEmpty()) return;
+
+        HuffmanNode root = buildHuffmanTree(freqMap);
+        Map<Character, String> codeMap = new LinkedHashMap<>();
+        generateCodes(root, "", codeMap);
+
+        System.out.println("\n-------------------------------------------------------------");
+        System.out.printf("%-12s %-12s %-15s %-12s%n", "Character", "Frequency", "Huffman Code", "Bits (Freq*Len)");
+        System.out.println("-------------------------------------------------------------");
+
+        int totalFrequency = 0;
+        int totalEncodedBits = 0;
+        for (Map.Entry<Character, Integer> entry : freqMap.entrySet()) {
+            char c = entry.getKey();
+            int freq = entry.getValue();
+            String code = codeMap.get(c);
+            int bits = freq * code.length();
+            totalFrequency += freq;
+            totalEncodedBits += bits;
+            System.out.printf("%-12s %-12d %-15s %-12d%n", "'" + c + "'", freq, code, bits);
+        }
+        System.out.println("-------------------------------------------------------------");
+
+        double avgCodeLength = (double) totalEncodedBits / totalFrequency;
+        int uncompressedBits = totalFrequency * 8;
+
+        System.out.println("Total characters in message        : " + totalFrequency);
+        System.out.println("Length of encoded message (in bits): " + totalEncodedBits + " bits");
+        System.out.printf(Locale.US, "Average code length                : %.3f bits/character%n", avgCodeLength);
+        System.out.println("Original uncompressed size (ASCII) : " + uncompressedBits + " bits (" + totalFrequency + " bytes)");
+        double savings = (1.0 - ((double) totalEncodedBits / uncompressedBits)) * 100.0;
+        System.out.printf(Locale.US, "Storage space saved                : %.2f%%%n", savings);
+
+        if (inputString != null) {
+            String encodedString = encode(inputString, codeMap);
+            String decodedString = decode(encodedString, root);
+            System.out.println("\nEncoded Bitstring:\n" + encodedString);
+            System.out.println("\nDecoded String (Verification):\n" + decodedString);
+            System.out.println("Lossless reconstruction: " + (inputString.equals(decodedString) ? "PASSED" : "FAILED"));
+        }
+    }
+}
+```
+
+### Lab Manual Solved Example
+Given frequencies:
+`a: 10`, `e: 15`, `i: 12`, `o: 3`, `u: 4`, `s: 13`, `t: 1`
+
+1. **Tree merge trace:**
+   - Merge `t(1)` + `o(3)` $\rightarrow$ node `4`
+   - Merge node `4` + `u(4)` $\rightarrow$ node `8`
+   - Merge node `8` + `a(10)` $\rightarrow$ node `18`
+   - Merge `i(12)` + `s(13)` $\rightarrow$ node `25`
+   - Merge `e(15)` + node `18` $\rightarrow$ node `33`
+   - Merge node `25` + node `33` $\rightarrow$ Root node `58`
+2. **Resulting Huffman Codes:**
+   - `a = 111`
+   - `e = 10`
+   - `i = 00`
+   - `o = 11001`
+   - `u = 1101`
+   - `s = 01`
+   - `t = 11000`
+3. **Metrics:**
+   - Total encoded message length: $10(3) + 15(2) + 12(2) + 3(5) + 4(4) + 13(2) + 1(5) = \mathbf{146\text{ bits}}$
+   - Average code length: $146 / 58 = \mathbf{2.517\text{ bits/character}}$
+
+### Complexity Analysis
+* **Time Complexity:** $O(n \log n)$ where $n$ is the number of unique characters.
+  * Building heap: $O(n)$ or $O(n \log n)$.
+  * Extract-min is called $2(n - 1)$ times, each taking $O(\log n)$.
+  * Overall: $\mathbf{O(n \log n)}$.
+* **Space Complexity:** $O(n)$ to store tree nodes and priority queue.
+
+### Assignment Questions & Answers (from Lab Manual)
+1. **What is Huffman Encoding?**
+   > Huffman Encoding is a greedy, variable-length prefix coding algorithm developed by David Huffman for lossless data compression. It assigns shorter binary codes to more frequent characters and longer codes to less frequent characters.
+2. **How many bits may be required for encoding the message ‘mississippi’?**
+   > 'mississippi' has length 11 with frequencies: $i: 4, s: 4, p: 2, m: 1$.
+   > Huffman codes: $s = 0$, $i = 10$, $m = 110$, $p = 111$.
+   > Total bits: $4(1) + 4(2) + 1(3) + 2(3) = 4 + 8 + 3 + 6 = \mathbf{21\text{ bits}}$ (vs 88 bits uncompressed).
+3. **Which tree is used in Huffman encoding? Give one example.**
+   > An extended full binary tree (strictly binary tree where every internal node has exactly two children) called a **Huffman Tree**. Leaves hold original characters; left and right edges are labeled `0` and `1`.
+4. **Why is Huffman coding lossless compression?**
+   > Because the complete original data can be reconstructed bit-for-bit during decoding without discarding any information, guaranteed by the unique prefix property of the Huffman tree.
 
 ---
 

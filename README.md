@@ -15,7 +15,8 @@ java A1_Fibonacci.java
 
 | Assignment | File | Input |
 |---|---|---|
-| A1 Fibonacci and step count | A1_Fibonacci.java | Number of terms |
+| A1 Fibonacci | A1_Fibonacci.java | Number of terms |
+| A2 Huffman encoding | A2_HuffmanEncoding.java | String or Character-Frequency Table |
 | A2 Job sequencing | A2_JobSequencing.java | Number of jobs, Name/Deadline/Profit |
 | A3 Fractional knapsack | A3_FractionalKnapsack.java | Number of items, Name/Weight/Value, Capacity |
 | A4 0-1 knapsack | A4_ZeroOneKnapsack.java | Number of items, Weight/Value, Capacity |
