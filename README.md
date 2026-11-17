@@ -2,23 +2,25 @@
 
 15 assignments, organized into three group folders. Each group includes Explanations.md with the full explanations from the study documents.
 
-## Group A - Algorithms (Python, no external packages)
+## Group A - Algorithms (Java)
 
-Open a terminal in Group_A and run any file with python3:
+Open a terminal in Group_A and compile/run any file with `javac` and `java` (or run single-file source directly with `java`):
 
 ```bash
 cd Group_A
-python3 a1_fibonacci.py
+javac A1_Fibonacci.java && java A1_Fibonacci
+# or in Java 11+:
+java A1_Fibonacci.java
 ```
 
 | Assignment | File | Input |
 |---|---|---|
-| A1 Fibonacci and step count | a1_fibonacci.py | Number of terms |
-| A2 Job sequencing | a2_job_sequencing.py | Number of jobs, Name/Deadline/Profit |
-| A3 Fractional knapsack | a3_fractional_knapsack.py | Number of items, Name/Weight/Value, Capacity |
-| A4 0-1 knapsack | a4_zero_one_knapsack.py | Number of items, Weight/Value, Capacity |
-| A5 Binomial coefficients | a5_binomial.py | n and r |
-| A6 Eight queens | a6_eight_queens.py | Fixed queen row/column, 1 to 8 |
+| A1 Fibonacci and step count | A1_Fibonacci.java | Number of terms |
+| A2 Job sequencing | A2_JobSequencing.java | Number of jobs, Name/Deadline/Profit |
+| A3 Fractional knapsack | A3_FractionalKnapsack.java | Number of items, Name/Weight/Value, Capacity |
+| A4 0-1 knapsack | A4_ZeroOneKnapsack.java | Number of items, Weight/Value, Capacity |
+| A5 Binomial coefficients | A5_Binomial.java | n and r |
+| A6 Eight queens | A6_EightQueens.java | Fixed queen row/column, 1 to 8 |
 
 ## Group B - Machine learning
 
@@ -64,6 +66,6 @@ For C3/C4 open https://remix.ethereum.org/ and import the .sol file. Use Solidit
 
 ## Validation and scope
 
-Python syntax and Group A sample behavior are checked locally. The ML workflows require the real CSVs and dependencies. The Solidity contracts require compilation and deployment in Remix. The MetaMask demo requires an installed, connected extension; no wallet transactions or deployments were performed when preparing these files.
+Java syntax and Group A sample behavior are checked locally with OpenJDK javac/java. The ML workflows require the real CSVs and dependencies. The Solidity contracts require compilation and deployment in Remix. The MetaMask demo requires an installed, connected extension; no wallet transactions or deployments were performed when preparing these files.
 
 Provider reference: https://docs.metamask.io/metamask-connect/evm/reference/json-rpc-api/eth_getBalance/

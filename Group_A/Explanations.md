@@ -2,59 +2,90 @@
 ## Design and Analysis of Algorithms
 SPPU | Fourth Year Computer Engineering | 2019 Course | 410246
 
-Complete solutions for all six Group A assignments in the supplied LP III.pdf. Python 3 is used for clarity. Each code block is an independent program: save it using the indicated filename and run `python3 filename.py`. No third-party packages are required.
+Complete solutions for all six Group A assignments in the supplied LP III.pdf. Java is used for implementation. Each code file is an independent program: compile and run using `javac FileName.java && java ClassName` or run directly using `java FileName.java`. No third-party packages are required (uses standard `java.util`).
 
-Examples below are expected results worked out from the supplied inputs, not claimed execution logs. Complexity uses the usual unit-cost arithmetic model; very large Python integers take extra bit-processing time.
+Examples below are expected results worked out from the supplied inputs. Complexity uses the standard unit-cost arithmetic model.
+
+---
 
 ## A1. Fibonacci numbers and step count
 **Aim:** Generate the first n Fibonacci numbers and count execution steps.
 
 **Idea:** Start with 0 and 1. Repeatedly output the current value and update the pair to (next, current + next). This avoids recomputing terms as naive recursion does.
 
-**Counting convention:** Count each assignment, comparison, addition, append and return as one step. Tuple assignment counts as two assignments. The for-loop mechanism is not counted separately; the explicit while-loop condition is counted, including its final failed check. Function call and print overhead are excluded. There is no universal step count without such a convention.
+**Counting convention:** Count each assignment, comparison, addition, append/add, and return as one step. The for/while loop mechanism counts the explicit comparison in each iteration including the final failed check. Function call and print overhead are excluded. There is no universal step count without such an explicit convention.
 
-### Code - a1_fibonacci.py
-```python
-def fibonacci(n):
-    if n < 0:
-        raise ValueError("n must be non-negative")
+### Code - A1_Fibonacci.java
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
-    # Counter bookkeeping itself is not part of the count.
-    steps = 1             # n < 0 comparison
-    a, b = 0, 1
-    result = []
-    i = 0
-    steps += 4            # a, b, result, i assignments
+public class A1_Fibonacci {
+    public static class Result {
+        public final List<Long> terms;
+        public final long steps;
 
-    while i < n:
-        steps += 1        # successful loop comparison
-        result.append(a)
-        steps += 1        # append
-        a, b = b, a + b
-        steps += 3        # addition, two assignments
-        i = i + 1
-        steps += 2        # addition and assignment
+        public Result(List<Long> terms, long steps) {
+            this.terms = terms;
+            this.steps = steps;
+        }
+    }
 
-    steps += 1            # final failed comparison
-    steps += 1            # return
-    return result, steps
+    public static Result fibonacci(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("n must be non-negative");
+        }
 
+        // Counter bookkeeping itself is not part of the count.
+        long steps = 1; // n < 0 comparison
+        long a = 0, b = 1;
+        List<Long> result = new ArrayList<>();
+        int i = 0;
+        steps += 4; // a, b, result, i assignments
 
-if __name__ == "__main__":
-    n = int(input("Number of terms: "))
-    terms, steps = fibonacci(n)
-    print("Fibonacci:", terms)
-    print("Counted steps:", steps)
-    print("Formula 7n + 7:", 7 * n + 7)
+        while (i < n) {
+            steps += 1; // successful loop comparison
+            result.add(a);
+            steps += 1; // append / add
+            long temp = a + b;
+            a = b;
+            b = temp;
+            steps += 3; // addition, two assignments
+            i = i + 1;
+            steps += 2; // addition and assignment
+        }
+
+        steps += 1; // final failed comparison
+        steps += 1; // return
+        return new Result(result, steps);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Number of terms: ");
+        if (!scanner.hasNextInt()) {
+            System.err.println("Invalid input. Non-negative integer required.");
+            return;
+        }
+        int n = scanner.nextInt();
+        Result res = fibonacci(n);
+        System.out.println("Fibonacci: " + res.terms);
+        System.out.println("Counted steps: " + res.steps);
+        System.out.println("Formula 7n + 7: " + (7L * n + 7));
+    }
+}
 ```
 
 **Walkthrough:** For n = 5, the pairs before output are (0,1), (1,1), (1,2), (2,3), (3,5), so the list is [0, 1, 1, 2, 3]. Counted steps = 42. For n = 0 the list is empty and steps = 7.
 
-**Complexity:** Time O(n); O(n) space for the returned list, O(1) auxiliary state. Directly printing terms would avoid the list.
+**Complexity:** Time O(n); O(n) space for the returned list, O(1) auxiliary state.
 
 **Tell the examiner:** "I use two variables to store consecutive Fibonacci numbers. Every iteration generates one term, so runtime grows linearly with the number of terms. I define my step-count model explicitly, giving 7n + 7."
 
-**Viva:** Why avoid naive recursion? It repeats the same subproblems and takes exponential time. Is this dynamic programming? It is the space-optimized iterative recurrence, retaining only the two necessary states.
+**Viva:** Why avoid naive recursion? It repeats the same subproblems and takes exponential time ($O(2^n)$). Is this dynamic programming? It is the space-optimized iterative recurrence, retaining only the two necessary states.
+
+---
 
 ## A2. Job sequencing with deadlines
 **Aim:** Schedule unit-time jobs to maximize profit while meeting deadlines.
@@ -63,53 +94,125 @@ if __name__ == "__main__":
 
 **Algorithm:** Sort by decreasing profit. Put each job in the latest free slot on or before its deadline. Late placement keeps earlier slots available for more urgent jobs.
 
-### Code - a2_job_sequencing.py
-```python
-def schedule_jobs(jobs):
-    # A job is (name, deadline, profit).
-    valid = [job for job in jobs if job[1] > 0 and job[2] > 0]
-    if not valid:
-        return [], 0
+### Code - A2_JobSequencing.java
+```java
+import java.util.*;
 
-    horizon = min(len(valid), max(job[1] for job in valid))
-    slots = [None] * horizon
-    profit = 0
-    for job in sorted(valid, key=lambda j: j[2], reverse=True):
-        name, deadline, value = job
-        for slot in range(min(deadline, horizon) - 1, -1, -1):
-            if slots[slot] is None:
-                slots[slot] = job
-                profit += value
-                break
-    return slots, profit
+public class A2_JobSequencing {
+    public static class Job {
+        public String id;
+        public int deadline;
+        public int profit;
 
+        public Job(String id, int deadline, int profit) {
+            this.id = id;
+            this.deadline = deadline;
+            this.profit = profit;
+        }
+    }
 
-if __name__ == "__main__":
-    n = int(input("Number of jobs: "))
-    jobs = []
-    for i in range(n):
-        entry = input(f"Job {i + 1} (ID Deadline Profit): ").strip().split()
-        if len(entry) >= 3:
-            name, deadline, profit = entry[0], int(entry[1]), int(entry[2])
-        elif len(entry) == 2:
-            name, deadline, profit = f"J{i + 1}", int(entry[0]), int(entry[1])
-        elif len(entry) == 1:
-            name = entry[0]
-            deadline = int(input(f"  Deadline for {name}: "))
-            profit = int(input(f"  Profit for {name}: "))
-        else:
-            name = f"J{i + 1}"
-            deadline = int(input(f"  Deadline for Job {i + 1}: "))
-            profit = int(input(f"  Profit for Job {i + 1}: "))
-        jobs.append((name, deadline, profit))
+    public static class ScheduleResult {
+        public Job[] slots;
+        public int totalProfit;
 
-    slots, profit = schedule_jobs(jobs)
-    for time, job in enumerate(slots, start=1):
-        print("Slot", time, ":", job[0] if job else "Idle")
-    print("Maximum profit:", profit)
+        public ScheduleResult(Job[] slots, int totalProfit) {
+            this.slots = slots;
+            this.totalProfit = totalProfit;
+        }
+    }
+
+    public static ScheduleResult scheduleJobs(List<Job> jobs) {
+        List<Job> valid = new ArrayList<>();
+        int maxDeadline = 0;
+        for (Job j : jobs) {
+            if (j.deadline > 0 && j.profit > 0) {
+                valid.add(j);
+                if (j.deadline > maxDeadline) {
+                    maxDeadline = j.deadline;
+                }
+            }
+        }
+        if (valid.isEmpty()) {
+            return new ScheduleResult(new Job[0], 0);
+        }
+
+        int horizon = Math.min(valid.size(), maxDeadline);
+        Job[] slots = new Job[horizon];
+        int totalProfit = 0;
+
+        // Sort descending by profit
+        valid.sort((a, b) -> Integer.compare(b.profit, a.profit));
+
+        for (Job job : valid) {
+            int maxSlot = Math.min(job.deadline, horizon) - 1;
+            for (int s = maxSlot; s >= 0; s--) {
+                if (slots[s] == null) {
+                    slots[s] = job;
+                    totalProfit += job.profit;
+                    break;
+                }
+            }
+        }
+
+        return new ScheduleResult(slots, totalProfit);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Number of jobs: ");
+        if (!scanner.hasNextInt()) return;
+        int n = scanner.nextInt();
+        scanner.nextLine();
+
+        List<Job> jobs = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            System.out.print("Job " + (i + 1) + " (ID Deadline Profit): ");
+            String line = "";
+            while (line.isEmpty() && scanner.hasNextLine()) {
+                line = scanner.nextLine().trim();
+            }
+            String[] parts = line.split("\\s+");
+            String id;
+            int deadline;
+            int profit;
+
+            if (parts.length >= 3) {
+                id = parts[0];
+                deadline = Integer.parseInt(parts[1]);
+                profit = Integer.parseInt(parts[2]);
+            } else if (parts.length == 2) {
+                id = "J" + (i + 1);
+                deadline = Integer.parseInt(parts[0]);
+                profit = Integer.parseInt(parts[1]);
+            } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                id = parts[0];
+                System.out.print("  Deadline for " + id + ": ");
+                deadline = scanner.nextInt();
+                System.out.print("  Profit for " + id + ": ");
+                profit = scanner.nextInt();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            } else {
+                id = "J" + (i + 1);
+                System.out.print("  Deadline for Job " + (i + 1) + ": ");
+                deadline = scanner.nextInt();
+                System.out.print("  Profit for Job " + (i + 1) + ": ");
+                profit = scanner.nextInt();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            }
+            jobs.add(new Job(id, deadline, profit));
+        }
+
+        ScheduleResult result = scheduleJobs(jobs);
+        for (int time = 0; time < result.slots.length; time++) {
+            Job job = result.slots[time];
+            System.out.println("Slot " + (time + 1) + " : " + (job != null ? job.id : "Idle"));
+        }
+        System.out.println("Maximum profit: " + result.totalProfit);
+    }
+}
 ```
 
-**Expected result:** Slots 1, 2 and 3 contain J3, J1 and J5. Total profit = 27 + 100 + 15 = 142. J1 is considered first but placed in slot 2.
+**Expected result:** With 5 jobs (`J1 2 100`, `J2 1 19`, `J3 2 27`, `J4 1 25`, `J5 3 15`), Slots 1, 2 and 3 contain J3, J1 and J5. Total profit = 27 + 100 + 15 = 142. J1 is considered first but placed in slot 2.
 
 **Explanation:** Sorting establishes the greedy choice. The inner reverse loop finds a feasible position. The break ensures each job is scheduled only once. Limiting the horizon to the number of valid jobs avoids allocating an unnecessarily large array.
 
@@ -119,64 +222,150 @@ if __name__ == "__main__":
 
 **Viva:** Does this solve arbitrary-duration scheduling? No, the unit-duration assumption is essential. Why not schedule each selected job as early as possible? Doing so can block another job with a tighter deadline.
 
+---
+
 ## A3. Fractional knapsack using greedy selection
 **Aim:** Maximize value in a capacity-limited bag when fractions of items are allowed.
 
 **Algorithm:** Compute value/weight, sort descending, take each item fully if possible, otherwise take only the fraction that fits.
 
-### Code - a3_fractional_knapsack.py
-```python
-def fractional_knapsack(items, capacity):
-    # Each item is (name, weight, value).
-    if capacity < 0:
-        raise ValueError("Capacity cannot be negative")
-    if any(w <= 0 or v < 0 for _, w, v in items):
-        raise ValueError("Weights must be positive; values non-negative")
+### Code - A3_FractionalKnapsack.java
+```java
+import java.util.*;
 
-    total = 0.0
-    chosen = []
-    remaining = float(capacity)
-    ordered = sorted(items, key=lambda item: item[2] / item[1],
-                     reverse=True)
-    for name, weight, value in ordered:
-        if remaining <= 0:
-            break
-        taken_weight = min(weight, remaining)
-        fraction = taken_weight / weight
-        total += fraction * value
-        remaining -= taken_weight
-        chosen.append((name, fraction))
-    return total, chosen
+public class A3_FractionalKnapsack {
+    public static class Item {
+        public String name;
+        public double weight;
+        public double value;
 
+        public Item(String name, double weight, double value) {
+            this.name = name;
+            this.weight = weight;
+            this.value = value;
+        }
 
-if __name__ == "__main__":
-    n = int(input("Number of items: "))
-    items = []
-    for i in range(n):
-        entry = input(f"Item {i + 1} (Name Weight Value): ").strip().split()
-        if len(entry) >= 3:
-            name, weight, value = entry[0], float(entry[1]), float(entry[2])
-        elif len(entry) == 2:
-            name = chr(ord('A') + i) if i < 26 else f"Item{i + 1}"
-            weight, value = float(entry[0]), float(entry[1])
-        elif len(entry) == 1:
-            name = entry[0]
-            weight = float(input(f"  Weight for {name}: "))
-            value = float(input(f"  Value for {name}: "))
-        else:
-            name = chr(ord('A') + i) if i < 26 else f"Item{i + 1}"
-            weight = float(input(f"  Weight for Item {i + 1}: "))
-            value = float(input(f"  Value for Item {i + 1}: "))
-        items.append((name, weight, value))
+        public double ratio() {
+            return value / weight;
+        }
+    }
 
-    capacity = float(input("Knapsack capacity: "))
-    value, chosen = fractional_knapsack(items, capacity)
-    for name, fraction in chosen:
-        print(name, "fraction =", round(fraction, 4))
-    print("Maximum value:", round(value, 2))
+    public static class SelectedItem {
+        public String name;
+        public double fraction;
+
+        public SelectedItem(String name, double fraction) {
+            this.name = name;
+            this.fraction = fraction;
+        }
+    }
+
+    public static class Result {
+        public double totalValue;
+        public List<SelectedItem> chosen;
+
+        public Result(double totalValue, List<SelectedItem> chosen) {
+            this.totalValue = totalValue;
+            this.chosen = chosen;
+        }
+    }
+
+    public static Result fractionalKnapsack(List<Item> items, double capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Capacity cannot be negative");
+        }
+        for (Item item : items) {
+            if (item.weight <= 0 || item.value < 0) {
+                throw new IllegalArgumentException("Weights must be positive; values non-negative");
+            }
+        }
+
+        List<Item> ordered = new ArrayList<>(items);
+        ordered.sort((a, b) -> Double.compare(b.ratio(), a.ratio()));
+
+        double total = 0.0;
+        double remaining = capacity;
+        List<SelectedItem> chosen = new ArrayList<>();
+
+        for (Item item : ordered) {
+            if (remaining <= 0) break;
+            double takenWeight = Math.min(item.weight, remaining);
+            double fraction = takenWeight / item.weight;
+            total += fraction * item.value;
+            remaining -= takenWeight;
+            chosen.add(new SelectedItem(item.name, fraction));
+        }
+
+        return new Result(total, chosen);
+    }
+
+    private static String formatFraction(double fraction) {
+        double rounded = Math.round(fraction * 10000.0) / 10000.0;
+        if (rounded == (long) rounded) {
+            return String.format(Locale.US, "%.1f", rounded);
+        }
+        return String.valueOf(rounded);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Number of items: ");
+        if (!scanner.hasNextInt()) return;
+        int n = scanner.nextInt();
+        scanner.nextLine();
+
+        List<Item> items = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            System.out.print("Item " + (i + 1) + " (Name Weight Value): ");
+            String line = "";
+            while (line.isEmpty() && scanner.hasNextLine()) {
+                line = scanner.nextLine().trim();
+            }
+            String[] parts = line.split("\\s+");
+            String name;
+            double weight;
+            double value;
+
+            if (parts.length >= 3) {
+                name = parts[0];
+                weight = Double.parseDouble(parts[1]);
+                value = Double.parseDouble(parts[2]);
+            } else if (parts.length == 2) {
+                name = (i < 26) ? String.valueOf((char) ('A' + i)) : ("Item" + (i + 1));
+                weight = Double.parseDouble(parts[0]);
+                value = Double.parseDouble(parts[1]);
+            } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                name = parts[0];
+                System.out.print("  Weight for " + name + ": ");
+                weight = scanner.nextDouble();
+                System.out.print("  Value for " + name + ": ");
+                value = scanner.nextDouble();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            } else {
+                name = (i < 26) ? String.valueOf((char) ('A' + i)) : ("Item" + (i + 1));
+                System.out.print("  Weight for Item " + (i + 1) + ": ");
+                weight = scanner.nextDouble();
+                System.out.print("  Value for Item " + (i + 1) + ": ");
+                value = scanner.nextDouble();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            }
+            items.add(new Item(name, weight, value));
+        }
+
+        System.out.print("Knapsack capacity: ");
+        if (!scanner.hasNextDouble()) return;
+        double capacity = scanner.nextDouble();
+
+        Result result = fractionalKnapsack(items, capacity);
+        for (SelectedItem item : result.chosen) {
+            System.out.println(item.name + " fraction = " + formatFraction(item.fraction));
+        }
+        System.out.printf(Locale.US, "Maximum value: %.2f%n", result.totalValue);
+    }
+}
 ```
 
-**Expected result:** A = 1.0, B = 1.0, C = 0.6667; value = 240.00. Ratios are 6, 5 and 4. After A and B, 20 units remain, so take 20/30 of C, contributing 80.
+**Expected result:** For items `A 10 60`, `B 20 100`, `C 30 120` and capacity `50`: A = 1.0, B = 1.0, C = 0.6667; Maximum value = 240.00. Ratios are 6, 5 and 4. After A and B, 20 units remain, taking 20/30 of C (adding 80).
 
 **Complexity:** O(n log n) time due to sorting; O(n) space for sorted items and the result.
 
@@ -184,181 +373,294 @@ if __name__ == "__main__":
 
 **Viva:** Why does this fail for 0-1 knapsack? Indivisibility means a high-ratio item can prevent a better combination. For these same items, the 0-1 optimum is B + C = 220, while ratio-greedy would choose A + B = 160.
 
+---
+
 ## A4. 0-1 knapsack using dynamic programming
 **Aim:** Select whole items to maximize value without exceeding capacity. Each item can be selected once.
 
 **State:** dp[i][c] = maximum value using the first i items within capacity c.
 If weight w of item i exceeds c, copy the previous answer. Otherwise choose the better of excluding the item and including it: max(dp[i-1][c], value + dp[i-1][c-w]).
 
-### Code - a4_zero_one_knapsack.py
-```python
-def knapsack(weights, values, capacity):
-    if len(weights) != len(values):
-        raise ValueError("Lengths must match")
-    if not isinstance(capacity, int) or capacity < 0:
-        raise ValueError("Capacity must be a non-negative integer")
-    if any(not isinstance(w, int) or w <= 0 for w in weights):
-        raise ValueError("Weights must be positive integers")
+### Code - A4_ZeroOneKnapsack.java
+```java
+import java.util.*;
 
-    n = len(weights)
-    dp = [[0] * (capacity + 1) for _ in range(n + 1)]
-    for i in range(1, n + 1):
-        w, value = weights[i - 1], values[i - 1]
-        for c in range(capacity + 1):
-            dp[i][c] = dp[i - 1][c]
-            if w <= c:
-                dp[i][c] = max(
-                    dp[i][c], value + dp[i - 1][c - w]
-                )
+public class A4_ZeroOneKnapsack {
+    public static class Result {
+        public int maxValue;
+        public List<Integer> selectedItems;
 
-    selected = []
-    c = capacity
-    for i in range(n, 0, -1):
-        if dp[i][c] != dp[i - 1][c]:
-            selected.append(i - 1)
-            c -= weights[i - 1]
-    selected.reverse()
-    return dp[n][capacity], selected
+        public Result(int maxValue, List<Integer> selectedItems) {
+            this.maxValue = maxValue;
+            this.selectedItems = selectedItems;
+        }
+    }
 
+    public static Result knapsack(int[] weights, int[] values, int capacity) {
+        if (weights.length != values.length) {
+            throw new IllegalArgumentException("Lengths must match");
+        }
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Capacity must be a non-negative integer");
+        }
+        for (int w : weights) {
+            if (w <= 0) {
+                throw new IllegalArgumentException("Weights must be positive integers");
+            }
+        }
 
-if __name__ == "__main__":
-    n = int(input("Number of items: "))
-    weights = []
-    values = []
-    for i in range(n):
-        entry = input(f"Item {i + 1} (Weight Value): ").strip().split()
-        if len(entry) >= 2:
-            w, v = int(entry[0]), int(entry[1])
-        elif len(entry) == 1:
-            w = int(entry[0])
-            v = int(input(f"  Value for Item {i + 1}: "))
-        else:
-            w = int(input(f"  Weight for Item {i + 1}: "))
-            v = int(input(f"  Value for Item {i + 1}: "))
-        weights.append(w)
-        values.append(v)
+        int n = weights.length;
+        int[][] dp = new int[n + 1][capacity + 1];
 
-    capacity = int(input("Knapsack capacity: "))
-    best, selected = knapsack(weights, values, capacity)
-    print("Maximum value:", best)
-    print("Selected item numbers:", [i + 1 for i in selected])
+        for (int i = 1; i <= n; i++) {
+            int w = weights[i - 1];
+            int value = values[i - 1];
+            for (int c = 0; c <= capacity; c++) {
+                dp[i][c] = dp[i - 1][c];
+                if (w <= c) {
+                    dp[i][c] = Math.max(dp[i][c], value + dp[i - 1][c - w]);
+                }
+            }
+        }
+
+        List<Integer> selected = new ArrayList<>();
+        int c = capacity;
+        for (int i = n; i > 0; i--) {
+            if (dp[i][c] != dp[i - 1][c]) {
+                selected.add(i); // 1-based index
+                c -= weights[i - 1];
+            }
+        }
+        Collections.reverse(selected);
+
+        return new Result(dp[n][capacity], selected);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Number of items: ");
+        if (!scanner.hasNextInt()) return;
+        int n = scanner.nextInt();
+        scanner.nextLine();
+
+        int[] weights = new int[n];
+        int[] values = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("Item " + (i + 1) + " (Weight Value): ");
+            String line = "";
+            while (line.isEmpty() && scanner.hasNextLine()) {
+                line = scanner.nextLine().trim();
+            }
+            String[] parts = line.split("\\s+");
+            if (parts.length >= 2) {
+                weights[i] = Integer.parseInt(parts[0]);
+                values[i] = Integer.parseInt(parts[1]);
+            } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                weights[i] = Integer.parseInt(parts[0]);
+                System.out.print("  Value for Item " + (i + 1) + ": ");
+                values[i] = scanner.nextInt();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            } else {
+                System.out.print("  Weight for Item " + (i + 1) + ": ");
+                weights[i] = scanner.nextInt();
+                System.out.print("  Value for Item " + (i + 1) + ": ");
+                values[i] = scanner.nextInt();
+                if (scanner.hasNextLine()) scanner.nextLine();
+            }
+        }
+
+        System.out.print("Knapsack capacity: ");
+        if (!scanner.hasNextInt()) return;
+        int capacity = scanner.nextInt();
+
+        Result res = knapsack(weights, values, capacity);
+        System.out.println("Maximum value: " + res.maxValue);
+        System.out.println("Selected item numbers: " + res.selectedItems);
+    }
+}
 ```
 
-**Expected result:** Maximum value 220; selected item numbers [2, 3].
+**Expected result:** For weights `[10, 20, 30]`, values `[60, 100, 120]`, capacity `50`: Maximum value 220; selected item numbers [2, 3].
 
 **Explanation:** Row 0 represents no items. Referring to the previous row in both choices prevents reusing the same item. Backtracking through changed cells recovers one optimum; ties may allow several valid solutions.
 
-**Complexity:** O(nW) time and space, where W is integer capacity. This is pseudo-polynomial because W's numeric value, rather than its bit length, appears in the complexity. A one-dimensional array reduces memory to O(W), but recovering selected items needs additional care.
+**Complexity:** O(nW) time and space, where W is integer capacity. This is pseudo-polynomial because W's numeric value, rather than its bit length, appears in the complexity.
 
 **Tell the examiner:** "For each item and capacity I compare include and exclude choices, store the optimum, and reuse smaller answers. Unlike fractional knapsack, I never take part of an item."
 
 **Viva:** Why dynamic programming? The problem has optimal substructure and overlapping subproblems. In a one-dimensional implementation, why traverse capacities backwards? To avoid using the current item more than once.
+
+---
 
 ## A5. Binomial coefficients using dynamic programming
 **Aim:** Generate Pascal's triangle and obtain C(n,r).
 
 **Recurrence:** C(n,0) = C(n,n) = 1; C(n,r) = C(n-1,r-1) + C(n-1,r). The recurrence counts selections that include a chosen element and selections that exclude it.
 
-### Code - a5_binomial.py
-```python
-def binomial_table(n):
-    if n < 0:
-        raise ValueError("n must be non-negative")
-    table = []
-    for i in range(n + 1):
-        row = [1] * (i + 1)
-        for j in range(1, i):
-            row[j] = table[i - 1][j - 1] + table[i - 1][j]
-        table.append(row)
-    return table
+### Code - A5_Binomial.java
+```java
+import java.util.Scanner;
 
+public class A5_Binomial {
+    public static long[][] binomialTable(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("n must be non-negative");
+        }
+        long[][] table = new long[n + 1][];
+        for (int i = 0; i <= n; i++) {
+            table[i] = new long[i + 1];
+            table[i][0] = 1;
+            table[i][i] = 1;
+            for (int j = 1; j < i; j++) {
+                table[i][j] = table[i - 1][j - 1] + table[i - 1][j];
+            }
+        }
+        return table;
+    }
 
-if __name__ == "__main__":
-    n = int(input("n: "))
-    r = int(input("r: "))
-    if not 0 <= r <= n:
-        raise ValueError("Require 0 <= r <= n")
-    table = binomial_table(n)
-    for row in table:
-        print(*row)
-    print("C(n, r) =", table[n][r])
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("n: ");
+        if (!scanner.hasNextInt()) return;
+        int n = scanner.nextInt();
+
+        System.out.print("r: ");
+        if (!scanner.hasNextInt()) return;
+        int r = scanner.nextInt();
+
+        if (r < 0 || r > n) {
+            throw new IllegalArgumentException("Require 0 <= r <= n");
+        }
+
+        long[][] table = binomialTable(n);
+        for (int i = 0; i <= n; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0; j <= i; j++) {
+                if (j > 0) sb.append(" ");
+                sb.append(table[i][j]);
+            }
+            System.out.println(sb.toString());
+        }
+        System.out.println("C(n, r) = " + table[n][r]);
+    }
+}
 ```
 
-**Example:** n = 5, r = 2 gives final row 1 5 10 10 5 1 and C(5,2) = 10. Row 0 is [1].
+**Example:** n = 5, r = 2 gives final row `1 5 10 10 5 1` and `C(5, 2) = 10`.
 
-**Complexity:** O(n²) time and space for the whole triangle. Computing only C(n,r) can use O(nr) time and O(r) memory by updating one row backwards.
+**Complexity:** O(n²) time and space for the whole triangle.
 
 **Tell the examiner:** "Every inner coefficient is the sum of the two coefficients above it. I store previously computed rows, avoiding repeated recursive work and factorial calculations."
 
 **Viva:** What is C(n,r)? The number of ways to choose r objects from n without considering order. Why are the edges 1? There is one way to choose nothing and one way to choose all objects.
 
+---
+
 ## A6. Eight queens with a fixed first queen
 **Aim:** Place eight queens so no two share a row, column or diagonal, preserving the supplied queen.
 
-**Input convention:** Enter the fixed queen's row and column from 1 to 8. It can be anywhere, not only in the top-left cell. Internally rows and columns are indexed 0 to 7.
+**Input convention:** Enter the fixed queen's row and column from 1 to 8. Internally rows and columns are indexed 0 to 7.
 
-**Algorithm:** Mark the fixed queen's column and both diagonals as occupied. Recursively place one queen in every other row. If a row has no safe column, undo the previous choice and try another.
+**Algorithm:** Mark the fixed queen's column and both diagonals as occupied. Recursively place one queen in every other row. If a row has no safe column, undo the previous choice and backtrack.
 
-### Code - a6_eight_queens.py
-```python
-def solve_queens(fixed_row, fixed_col, n=8):
-    if not (0 <= fixed_row < n and 0 <= fixed_col < n):
-        raise ValueError("Fixed queen is outside the board")
+### Code - A6_EightQueens.java
+```java
+import java.util.*;
 
-    board = [-1] * n
-    board[fixed_row] = fixed_col
-    columns = {fixed_col}
-    down_diagonals = {fixed_row - fixed_col}
-    up_diagonals = {fixed_row + fixed_col}
+public class A6_EightQueens {
+    public static int[] solveQueens(int fixedRow, int fixedCol, int n) {
+        if (fixedRow < 0 || fixedRow >= n || fixedCol < 0 || fixedCol >= n) {
+            throw new IllegalArgumentException("Fixed queen is outside the board");
+        }
 
-    def place(row):
-        if row == n:
-            return True
-        if row == fixed_row:
-            return place(row + 1)
+        int[] board = new int[n];
+        Arrays.fill(board, -1);
+        board[fixedRow] = fixedCol;
 
-        for col in range(n):
-            d1, d2 = row - col, row + col
-            if (col in columns or d1 in down_diagonals
-                    or d2 in up_diagonals):
-                continue
-            board[row] = col
-            columns.add(col)
-            down_diagonals.add(d1)
-            up_diagonals.add(d2)
-            if place(row + 1):
-                return True
-            board[row] = -1
-            columns.remove(col)
-            down_diagonals.remove(d1)
-            up_diagonals.remove(d2)
-        return False
+        Set<Integer> columns = new HashSet<>();
+        Set<Integer> downDiagonals = new HashSet<>();
+        Set<Integer> upDiagonals = new HashSet<>();
 
-    return board if place(0) else None
+        columns.add(fixedCol);
+        downDiagonals.add(fixedRow - fixedCol);
+        upDiagonals.add(fixedRow + fixedCol);
 
+        boolean solved = place(0, n, fixedRow, board, columns, downDiagonals, upDiagonals);
+        return solved ? board : null;
+    }
 
-if __name__ == "__main__":
-    row = int(input("Fixed queen row (1-8): ")) - 1
-    col = int(input("Fixed queen column (1-8): ")) - 1
-    answer = solve_queens(row, col)
-    if answer is None:
-        print("No solution")
-    else:
-        for queen_col in answer:
-            print(*[int(c == queen_col) for c in range(8)])
-        print("Queen columns (1-based):",
-              [c + 1 for c in answer])
+    private static boolean place(int row, int n, int fixedRow, int[] board,
+                                 Set<Integer> columns, Set<Integer> downDiagonals, Set<Integer> upDiagonals) {
+        if (row == n) {
+            return true;
+        }
+        if (row == fixedRow) {
+            return place(row + 1, n, fixedRow, board, columns, downDiagonals, upDiagonals);
+        }
+
+        for (int col = 0; col < n; col++) {
+            int d1 = row - col;
+            int d2 = row + col;
+            if (columns.contains(col) || downDiagonals.contains(d1) || upDiagonals.contains(d2)) {
+                continue;
+            }
+
+            board[row] = col;
+            columns.add(col);
+            downDiagonals.add(d1);
+            upDiagonals.add(d2);
+
+            if (place(row + 1, n, fixedRow, board, columns, downDiagonals, upDiagonals)) {
+                return true;
+            }
+
+            board[row] = -1;
+            columns.remove(col);
+            downDiagonals.remove(d1);
+            upDiagonals.remove(d2);
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Fixed queen row (1-8): ");
+        if (!scanner.hasNextInt()) return;
+        int row = scanner.nextInt() - 1;
+
+        System.out.print("Fixed queen column (1-8): ");
+        if (!scanner.hasNextInt()) return;
+        int col = scanner.nextInt() - 1;
+
+        int[] answer = solveQueens(row, col, 8);
+        if (answer == null) {
+            System.out.println("No solution");
+        } else {
+            for (int queenCol : answer) {
+                StringBuilder sb = new StringBuilder();
+                for (int c = 0; c < 8; c++) {
+                    if (c > 0) sb.append(" ");
+                    sb.append(c == queenCol ? 1 : 0);
+                }
+                System.out.println(sb.toString());
+            }
+
+            List<Integer> cols1Based = new ArrayList<>();
+            for (int c : answer) {
+                cols1Based.add(c + 1);
+            }
+            System.out.println("Queen columns (1-based): " + cols1Based);
+        }
+    }
+}
 ```
 
-**Example:** With fixed queen at (1,1), a valid solution has queen columns [1,5,8,6,3,7,2,4]. Each row contains exactly one 1. Column values, row-column values and row+column values must each be unique.
+**Example:** With fixed queen at (1,1), a valid solution has queen columns `[1, 5, 8, 6, 3, 7, 2, 4]`. Each row contains exactly one 1.
 
-**Explanation:** Equal row-column values indicate one diagonal direction; equal row+column values indicate the other. The sets include the fixed queen before recursion, so earlier rows cannot accidentally attack it. Removing set entries implements backtracking. This program stops after finding one solution.
+**Complexity:** O(N × N!) time in the worst case; O(N) auxiliary state and recursion stack.
 
-**Complexity:** For generalized N queens, a conservative bound for this implementation is O(N × N!) time because each recursive state scans N columns. Search is commonly summarized as factorial; pruning improves actual runtime. O(N) auxiliary state and recursion stack, excluding printed output.
-
-**Tell the examiner:** "I place one queen per row, check columns and diagonals, and undo placements that lead to dead ends. The given queen is marked in advance and never moved."
-
-**Viva:** Why not greedy? A safe placement now can prevent completion later. How to find all solutions? Record the board at the base case and continue searching instead of returning immediately.
+---
 
 ## Practical revision
 1. Greedy makes an irrevocable local choice: job sequencing and fractional knapsack.
@@ -366,5 +668,4 @@ if __name__ == "__main__":
 3. Backtracking explores alternatives and reverses failed choices: eight queens.
 4. Always state assumptions before claiming complexity or optimality.
 
-**Source:** Assignment numbering and scope follow the supplied SPPU LP III.pdf, Group A. These are explanatory reference implementations.
-
+**Source:** Assignment numbering and scope follow the supplied SPPU LP III.pdf, Group A.
